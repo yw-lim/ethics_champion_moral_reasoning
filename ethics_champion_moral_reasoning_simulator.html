@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethics Champion: Moral Reasoning Simulator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-interactive {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-interactive:hover {
+      border-color: rgba(234, 88, 12, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.1);
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(234, 88, 12, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(234, 88, 12, 0.5); }
+    }
+    .active-glow {
+      animation: pulseGlow 3s infinite;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 overflow-x-hidden selection:bg-brand-600 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-brand-600/20">
+        <i class="fa-solid fa-scale-balanced text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg leading-none tracking-tight text-white flex items-center gap-2">
+          ETHICS<span class="text-brand-500 font-normal">CHAMPION</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono font-normal">v2.5 Lab</span>
+        </h1>
+        <p class="text-xs text-slate-400">Moral Reasoning & Corporate Governance Simulator</p>
+      </div>
+    </div>
+
+    <!-- Live Game Stats Pill Bar -->
+    <div id="statsBar" class="hidden md:flex items-center gap-6 bg-slate-950/80 px-4 py-1.5 rounded-full border border-slate-800 text-xs font-mono">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+        <span class="text-slate-400">Integrity:</span>
+        <span id="statIntegrity" class="font-bold text-emerald-400">100%</span>
+      </div>
+      <div class="w-px h-4 bg-slate-800"></div>
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-users text-sky-400"></i>
+        <span class="text-slate-400">Stakeholder Welfare:</span>
+        <span id="statStakeholder" class="font-bold text-sky-400">75%</span>
+      </div>
+      <div class="w-px h-4 bg-slate-800"></div>
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-building-columns text-amber-400"></i>
+        <span class="text-slate-400">Governance Risk:</span>
+        <span id="statRisk" class="font-bold text-emerald-400">Low</span>
+      </div>
+    </div>
+
+    <!-- Header Tools & Modals -->
+    <div class="flex items-center gap-2">
+      <button onclick="toggleSound()" id="soundBtn" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" title="Toggle Sound Effects">
+        <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+      </button>
+      <button onclick="openReferenceModal()" class="px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-2 border border-slate-700/50 transition-colors">
+        <i class="fa-solid fa-book-open text-brand-500"></i>
+        <span>Ethics Reference</span>
+      </button>
+      <button onclick="confirmRestart()" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-red-900/40 hover:text-red-400 text-slate-400 transition-colors" title="Reset Simulator">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-between">
+    
+    <!-- SCREEN 1: Role & Onboarding Selection -->
+    <section id="screenOnboarding" class="flex-1 flex flex-col justify-center items-center py-6">
+      <div class="max-w-3xl w-full space-y-8 text-center">
+        <div class="space-y-3">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold uppercase tracking-widest">
+            <i class="fa-solid fa-graduation-cap"></i> University Professional Masterclass
+          </span>
+          <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
+            Master the Art of <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-amber-400 to-yellow-300">Moral Reasoning</span>
+          </h2>
+          <p class="text-slate-400 text-base md:text-lg max-width-2xl mx-auto">
+            Step into senior corporate leadership. Navigate high-stakes ethical dilemmas, analyze outcomes using key moral frameworks, and balance public interest with governance duties.
+          </p>
+        </div>
+
+        <!-- Role Cards Selection Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left pt-4">
+          
+          <!-- Role 1: Chief Financial Officer -->
+          <div onclick="selectRole('cfo')" class="glass-card glass-card-interactive p-5 rounded-2xl cursor-pointer group border border-slate-800 relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-15 transition-opacity text-8xl text-brand-500">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 text-xl mb-4 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-calculator"></i>
+            </div>
+            <h3 class="font-bold text-lg text-white group-hover:text-brand-400 transition-colors">Chief Financial Officer</h3>
+            <p class="text-xs text-brand-400 font-mono mb-2">Focus: Financial Reporting & Markets</p>
+            <p class="text-xs text-slate-400 leading-relaxed">Faced with earnings pressure, revenue recognition gray areas, and shareholder quarterly expectations.</p>
+          </div>
+
+          <!-- Role 2: Lead Audit Partner -->
+          <div onclick="selectRole('auditor')" class="glass-card glass-card-interactive p-5 rounded-2xl cursor-pointer group border border-slate-800 relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-15 transition-opacity text-8xl text-sky-500">
+              <i class="fa-solid fa-magnifying-glass-dollar"></i>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 text-xl mb-4 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+            <h3 class="font-bold text-lg text-white group-hover:text-sky-400 transition-colors">Lead Audit Partner</h3>
+            <p class="text-xs text-sky-400 font-mono mb-2">Focus: IFAC/IESBA Independence</p>
+            <p class="text-xs text-slate-400 leading-relaxed">Tasked with safeguarding public trust, professional skepticism, and reporting corporate irregularities.</p>
+          </div>
+
+          <!-- Role 3: Chief Risk & ESG Officer -->
+          <div onclick="selectRole('cro')" class="glass-card glass-card-interactive p-5 rounded-2xl cursor-pointer group border border-slate-800 relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-15 transition-opacity text-8xl text-emerald-500">
+              <i class="fa-solid fa-leaf"></i>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl mb-4 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-shield-heart"></i>
+            </div>
+            <h3 class="font-bold text-lg text-white group-hover:text-emerald-400 transition-colors">Chief Risk & ESG Director</h3>
+            <p class="text-xs text-emerald-400 font-mono mb-2">Focus: Sustainability & Stakeholders</p>
+            <p class="text-xs text-slate-400 leading-relaxed">Balancing long-term environmental/social governance with operational profit demands.</p>
+          </div>
+
+        </div>
+
+        <!-- Quick Start Prompt -->
+        <p class="text-xs text-slate-500 font-mono">
+          Select a executive role to begin your ethical simulation journey.
+        </p>
+      </div>
+    </section>
+
+
+    <!-- SCREEN 2: Active Dilemma Gameplay Area -->
+    <section id="screenDilemma" class="hidden flex-1 flex flex-col gap-6">
+      
+      <!-- Scenario Header & Step Progress Bar -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+        <div class="flex items-center gap-3">
+          <span id="caseNumberBadge" class="px-3 py-1 rounded-lg bg-brand-600 text-white font-mono font-bold text-xs uppercase">
+            CASE 01 / 05
+          </span>
+          <div>
+            <h2 id="scenarioTitle" class="text-xl font-bold text-white">Scenario Title Loading...</h2>
+            <p id="scenarioSub" class="text-xs text-slate-400">Topic: Revenue Recognition & Earnings Pressure</p>
+          </div>
+        </div>
+
+        <!-- Progress Dots -->
+        <div class="flex items-center gap-2" id="scenarioDots">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Dilemma Grid: Left Case Details, Right Action Options -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        <!-- Left Panel: Situation Briefing & Stakeholder Context (7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-5">
+          
+          <!-- Narrative Box -->
+          <div class="glass-card p-6 rounded-2xl border border-slate-800 flex-1 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono uppercase tracking-wider text-brand-400 font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-contract"></i> Executive Briefing
+                </span>
+                <span id="urgencyBadge" class="text-xs font-mono px-2.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800/40">
+                  CRITICAL DECISION REQUIRED
+                </span>
+              </div>
+              <p id="scenarioText" class="text-slate-200 text-base leading-relaxed space-y-3">
+                <!-- Dynamically populated narrative -->
+              </p>
+            </div>
+
+            <!-- Financial & Governance Metrics Snapshot -->
+            <div id="scenarioMetrics" class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800">
+              <!-- Dynamically populated metrics -->
+            </div>
+          </div>
+
+          <!-- Stakeholder Perspectives Accordion/Tabs -->
+          <div class="glass-card p-5 rounded-2xl border border-slate-800">
+            <h4 class="text-xs font-mono uppercase text-slate-400 tracking-wider mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-users text-brand-500"></i> Stakeholder Exposure & Pressure
+            </h4>
+            <div id="stakeholderGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Dynamically loaded stakeholder cards -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Panel: Decision Options & Philosophical Evaluation (5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 flex-1 flex flex-col">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-gavel text-amber-400"></i> Select Your Action Strategy
+            </h3>
+            
+            <div id="optionsContainer" class="space-y-3 flex-1 flex flex-col justify-center">
+              <!-- Dynamically generated action option buttons -->
+            </div>
+
+            <p class="text-xs text-slate-500 text-center mt-4 italic">
+              Choose deliberately. Each decision triggers immediate structural consequences and ethical evaluation.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SCREEN 3: Debrief & Multi-Framework Analysis -->
+    <section id="screenDebrief" class="hidden flex-1 flex flex-col gap-6">
+      
+      <!-- Debrief Header Banner -->
+      <div id="debriefBanner" class="p-6 rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span id="debriefOutcomeTag" class="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            Decision Executed
+          </span>
+          <h2 id="debriefChoiceTitle" class="text-2xl font-extrabold text-white mt-2">
+            Action: Complete Disclosure and Audit Committee Escalation
+          </h2>
+        </div>
+        <button onclick="nextScenario()" class="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-amber-500 hover:from-brand-500 hover:to-amber-400 text-white font-bold text-sm shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 transition-all">
+          <span>Proceed to Next Case</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- Main Debrief Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        <!-- Left: Immediate Consequence & Real-World Precedent (6 Cols) -->
+        <div class="lg:col-span-6 flex flex-col gap-5">
+          
+          <!-- Immediate & Long term consequence card -->
+          <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="text-xs font-mono uppercase text-brand-400 tracking-wider font-bold flex items-center gap-2">
+              <i class="fa-solid fa-newspaper"></i> Organizational Outcome & Market Reaction
+            </h3>
+            <div id="debriefOutcomeBody" class="text-slate-300 text-sm leading-relaxed space-y-3">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+
+          <!-- Real World Financial Scandal Case Study Comparison -->
+          <div class="glass-card p-6 rounded-2xl border border-amber-900/40 bg-amber-950/10 space-y-3">
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+              <i class="fa-solid fa-landmark"></i> Real-World Governance Precedent
+            </div>
+            <p id="debriefPrecedent" class="text-xs text-slate-300 leading-relaxed">
+              <!-- Case precedent text -->
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Right: The 4 Philosophical Framework Lenses Breakdown (6 Cols) -->
+        <div class="lg:col-span-6 glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-brain text-purple-400"></i> Moral Reasoning Framework Evaluation
+            </h3>
+            
+            <div id="frameworksAnalysisGrid" class="space-y-4">
+              <!-- 4 Framework Cards rendered here -->
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-500 font-mono text-center mt-4">
+            Ethical leadership requires synthesizing multiple moral lenses rather than relying on unexamined intuition.
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SCREEN 4: Final Scorecard & Ethical Leadership Persona -->
+    <section id="screenResults" class="hidden flex-1 flex flex-col gap-6 py-4">
+      
+      <!-- Final Header -->
+      <div class="text-center space-y-2">
+        <span class="px-3 py-1 rounded-full bg-brand-500/10 text-brand-400 text-xs font-mono font-bold uppercase border border-brand-500/20">
+          Simulation Complete
+        </span>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-white">Your Ethical Leadership Profile</h2>
+        <p class="text-slate-400 text-sm max-w-xl mx-auto">
+          Based on your decisions across all 5 financial governance dilemmas, here is your moral compass breakdown.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Persona Diagnosis & Core Metrics (5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+          <div class="glass-card p-6 rounded-2xl border border-slate-800 text-center space-y-4">
+            <div id="finalPersonaIcon" class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-tr from-brand-600 to-amber-500 flex items-center justify-center text-white text-3xl shadow-xl shadow-brand-600/20">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 uppercase font-mono tracking-widest">Dominant Archetype</span>
+              <h3 id="finalPersonaTitle" class="text-2xl font-extrabold text-white">Kantian Integrity Guard</h3>
+              <p id="finalPersonaDesc" class="text-xs text-slate-300 mt-2 leading-relaxed">
+                You prioritize duties, rule of law, and absolute moral principles above expedient financial outcomes.
+              </p>
+            </div>
+
+            <!-- Score breakdown grid -->
+            <div class="grid grid-cols-3 gap-2 pt-4 border-t border-slate-800 font-mono">
+              <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Integrity</span>
+                <span id="finalScoreIntegrity" class="text-sm font-bold text-emerald-400">92%</span>
+              </div>
+              <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Stakeholder</span>
+                <span id="finalScoreStakeholder" class="text-sm font-bold text-sky-400">84%</span>
+              </div>
+              <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Gov Risk</span>
+                <span id="finalScoreRisk" class="text-sm font-bold text-emerald-400">Low</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Academic Certificate Action -->
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="text-xs font-mono uppercase text-slate-300 font-bold flex items-center gap-2">
+              <i class="fa-solid fa-award text-amber-400"></i> Course Recommendation
+            </h4>
+            <p id="finalRecommendationText" class="text-xs text-slate-400 leading-relaxed">
+              Recommended focus: Strengthen pragmatic utilitarian assessment when strict adherence to rules threatens catastrophic economic fallout.
+            </p>
+            <button onclick="restartGame()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-2 border border-slate-700">
+              <i class="fa-solid fa-rotate-right"></i> Restart Simulation
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Radar Visualizer & Case History Log (7 Cols) -->
+        <div class="lg:col-span-7 glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-compass text-brand-500"></i> Moral Framework Distribution
+            </h3>
+            
+            <!-- Canvas for Radar Chart -->
+            <div class="relative w-full h-56 flex items-center justify-center">
+              <canvas id="radarChartCanvas" width="320" height="220"></canvas>
+            </div>
+          </div>
+
+          <!-- History Summary Table -->
+          <div>
+            <h4 class="text-xs font-mono uppercase text-slate-400 mb-2">Decision Log Summary</h4>
+            <div id="historyLogContainer" class="space-y-2 max-h-44 overflow-y-auto pr-1">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Educational Reference Modal (Ethical Theories & IFAC Code) -->
+  <div id="referenceModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-2xl w-full max-h-[85vh] rounded-2xl border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-book-bookmark text-brand-500"></i>
+          <h3 class="font-bold text-white text-base">Moral Reasoning & Governance Field Guide</h3>
+        </div>
+        <button onclick="closeReferenceModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-6 text-xs leading-relaxed text-slate-300">
+        
+        <!-- Section 1: Frameworks -->
+        <div>
+          <h4 class="text-sm font-bold text-amber-400 font-mono uppercase mb-3 border-b border-slate-800 pb-1">
+            Core Philosophical Frameworks
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+              <span class="font-bold text-sky-400 block mb-1">Utilitarianism (Consequentialism)</span>
+              <p class="text-slate-400">Pioneered by Jeremy Bentham and John Stuart Mill. Determines morality by calculating net consequences: the greatest good for the greatest number of stakeholders.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+              <span class="font-bold text-purple-400 block mb-1">Deontology (Kantian Duty)</span>
+              <p class="text-slate-400">Formulated by Immanuel Kant. Morality is based on duties, rights, and categorical imperatives. Actions are inherently right or wrong regardless of outcomes.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+              <span class="font-bold text-emerald-400 block mb-1">Virtue Ethics</span>
+              <p class="text-slate-400">Originating from Aristotle. Focuses on moral character and practical wisdom. Asks: "What kind of professional officer would I become if I take this action?"</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+              <span class="font-bold text-yellow-400 block mb-1">Justice & Fairness (Rawls)</span>
+              <p class="text-slate-400">John Rawls's "Veil of Ignorance". Ensures fair distribution of risks and rewards, protecting the most vulnerable stakeholders in financial decisions.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: IESBA Principles -->
+        <div>
+          <h4 class="text-sm font-bold text-brand-400 font-mono uppercase mb-3 border-b border-slate-800 pb-1">
+            IESBA Code of Ethics for Accountants
+          </h4>
+          <ul class="list-disc pl-4 space-y-1.5 text-slate-300">
+            <li><strong class="text-white">Integrity:</strong> Straightforwardness and honesty in all professional and business relationships.</li>
+            <li><strong class="text-white">Objectivity:</strong> Not allowing bias, conflict of interest, or undue influence to override judgments.</li>
+            <li><strong class="text-white">Professional Competence & Due Care:</strong> Maintaining professional knowledge and skill at required standards.</li>
+            <li><strong class="text-white">Confidentiality:</strong> Respecting the confidentiality of information acquired during duties.</li>
+            <li><strong class="text-white">Professional Behavior:</strong> Complying with relevant laws and avoiding actions that discredit the profession.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 border-t border-slate-800 bg-slate-900/90 text-right">
+        <button onclick="closeReferenceModal()" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs">
+          Got It
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <script>
+    /* ========================================================================
+       GAME STATE & GLOBAL VARIABLES
+       ======================================================================== */
+    const gameState = {
+      role: 'cfo', // 'cfo', 'auditor', 'cro'
+      currentScenarioIdx: 0,
+      soundEnabled: true,
+      
+      // Cumulative Metrics
+      integrityScore: 100,
+      stakeholderScore: 75,
+      governanceRisk: 20, // 0-100 (lower is better)
+
+      // Moral Framework Counters
+      frameworkScores: {
+        utilitarian: 0,
+        deontology: 0,
+        virtue: 0,
+        justice: 0
+      },
+
+      // History Log
+      history: []
+    };
+
+    /* ========================================================================
+       WEB AUDIO SYNTHESIZER (NO EXTERNAL AUDIO FILES)
+       ======================================================================== */
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!gameState.soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'select') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'complete') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.12); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.24); // G5
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'alert') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(180, now + 0.15);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        }
+      } catch (e) {
+        console.warn("Audio Context init blocked until user gesture", e);
+      }
+    }
+
+    function toggleSound() {
+      gameState.soundEnabled = !gameState.soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      if (gameState.soundEnabled) {
+        icon.className = "fa-solid fa-volume-high";
+        playSound('click');
+      } else {
+        icon.className = "fa-solid fa-volume-xmark text-slate-500";
+      }
+    }
+
+
+    /* ========================================================================
+       DILEMMA SCENARIO DATABASE
+       ======================================================================== */
+    const SCENARIOS = [
+      {
+        id: 'scenario1',
+        title: 'The Earnings Threshold Gambit',
+        sub: 'Topic: Revenue Recognition & Executive Bonuses',
+        urgency: 'Quarter-End Deadline in 24 Hours',
+        narrative: `
+          Your firm is exactly <strong>$2.4 Million short</strong> of meeting Wall Street consensus earnings target for Q4. Failing to hit consensus will trigger a estimated 18% stock sell-off, jeopardize pending employee stock purchase plans, and cause $400,000 in executive bonus forfeitures.
+          <br><br>
+          The VP of Sales proposes executing a <em>"Bill-and-Hold" arrangement</em> for a $3.0M equipment contract with a major buyer. The customer has signed the letter of intent, but explicitly specified delivery cannot happen until next fiscal quarter.
+        `,
+        metrics: [
+          { label: 'Q4 Target Gap', val: '-$2.4M', color: 'text-red-400' },
+          { label: 'Stock Volatility Risk', val: 'High (-18%)', color: 'text-amber-400' },
+          { label: 'Audit Risk Exposure', val: 'Severe', color: 'text-purple-400' }
+        ],
+        stakeholders: [
+          { title: 'Executive Team & Employees', desc: 'Bonus pools & stock options depend on reaching earnings target.' },
+          { title: 'Public Shareholders & Audit Board', desc: 'Rely on transparent GAAP revenue recognition.' }
+        ],
+        options: [
+          {
+            id: 's1_a1',
+            text: 'Refuse the Bill-and-Hold recording. Publish accurate missed earnings statement.',
+            tag: 'Strict Standard Compliance',
+            framework: 'deontology',
+            deltaIntegrity: +10,
+            deltaStakeholder: -5,
+            deltaRisk: -20,
+            outcomeText: 'You maintain strict compliance with GAAP revenue recognition rules. The stock drops 14% at market open, but independent regulators and financial analysts praise your transparent accounting integrity.',
+            precedent: 'Similar to the SEC enforcement actions against Sunbeam and Bristol-Myers Squibb for improper premature revenue recognition channel stuffing.',
+            evals: {
+              utilitarian: 'Short-term shareholder wealth declined, but long-term capital efficiency was preserved by preventing market misinformation.',
+              deontology: 'Strong adherence to categorical duties. Truth in financial reporting cannot be sacrificed for economic convenience.',
+              virtue: 'Demonstrated professional courage, honesty, and professional skepticism under executive pressure.',
+              justice: 'Fairly treated future investors who would have bought inflated shares under false financial statements.'
+            }
+          },
+          {
+            id: 's1_a2',
+            text: 'Approve the Bill-and-Hold recording with side agreements and footnotes.',
+            tag: 'Pragmatic Aggressive Accounting',
+            framework: 'utilitarian',
+            deltaIntegrity: -20,
+            deltaStakeholder: +10,
+            deltaRisk: +30,
+            outcomeText: 'Earnings consensus is met and the stock rises 4%. However, six months later during the annual audit, regulators uncover the premature recognition, forcing a public restatement and SEC investigation.',
+            precedent: 'Directly echoes the Xerox & Enron revenue acceleration tactics that destroyed investor confidence in the early 2000s.',
+            evals: {
+              utilitarian: 'Maximizes immediate utility for current employees and executives, but creates massive catastrophic tail risk for future stakeholders.',
+              deontology: 'Violates the fundamental rule against misleading financial statements regardless of intent.',
+              virtue: 'Compromises professional integrity for short-term gain, setting a dangerous organizational precedent.',
+              justice: 'Unfairly transfers financial risk to unsuspecting retail investors.'
+            }
+          },
+          {
+            id: 's1_a3',
+            text: 'Negotiate with the buyer to expedite partial legitimate delivery before midnight.',
+            tag: 'Balanced Operational Compromise',
+            framework: 'virtue',
+            deltaIntegrity: +5,
+            deltaStakeholder: +5,
+            deltaRisk: -5,
+            outcomeText: 'Through intense operational logistics, 50% of the shipment is legitimately delivered before midnight. The company misses consensus by a minor margin, softening the market blow.',
+            precedent: 'Demonstrates authentic operational problem-solving rather than accounting manipulation.',
+            evals: {
+              utilitarian: 'Balances operational effort with legitimate gain without manufacturing artificial paper profits.',
+              deontology: 'Respects accounting rules by matching revenue to actual economic substance delivered.',
+              virtue: 'Exhibits practical wisdom (phronesis) and creative professional problem-solving under pressure.',
+              justice: 'Maintains fairness across both internal employees and external financial market participants.'
+            }
+          }
+        ]
+      },
+      {
+        id: 'scenario2',
+        title: 'The Silent Containment Leak',
+        sub: 'Topic: Environmental Externalities & ESG Disclosure',
+        urgency: 'Sub-surface Seepage Detected',
+        narrative: `
+          Internal engineering telemetry discloses that a chemical processing plant operated by your wholly-owned subsidiary has a micro-fissure leaking non-lethal industrial solvents into an unpopulated aquifer. 
+          <br><br>
+          Remediating the flaw immediately requires a mandatory 3-week plant shutdown costing <strong>$14 Million</strong>. Current state environmental laws only mandate reporting if solvent levels exceed 50 ppm (currently at 38 ppm).
+        `,
+        metrics: [
+          { label: 'Cleanup Cost', val: '$14.0M', color: 'text-amber-400' },
+          { label: 'Legal Concentration Limit', val: '38/50 ppm', color: 'text-emerald-400' },
+          { label: 'Long-term Ecological Threat', val: 'Moderate', color: 'text-purple-400' }
+        ],
+        stakeholders: [
+          { title: 'Local Community & Water Board', desc: 'Dependent on aquifer purity over multi-decade horizon.' },
+          { title: 'Corporate Shareowners', desc: 'Exposed to immediate margin compression if shutdown occurs.' }
+        ],
+        options: [
+          {
+            id: 's2_a1',
+            text: 'Voluntarily shut down the plant immediately and fund full aquifer remediation.',
+            tag: 'Proactive Public Interest',
+            framework: 'justice',
+            deltaIntegrity: +15,
+            deltaStakeholder: +15,
+            deltaRisk: -25,
+            outcomeText: 'The shutdown costs $14M, reducing annual net profits by 8%. However, local community trust surges, and ESG investment funds upgrade your corporate rating to Tier-1.',
+            precedent: 'Reflects Johnson & Johnson’s legendary 1982 Tylenol recall, sacrificing short-term revenue for public safety.',
+            evals: {
+              utilitarian: 'Prevents potential catastrophic long-term public health costs and lawsuits at a defined cost.',
+              deontology: 'Acts according to the duty of care and non-maleficence regardless of legal minimum thresholds.',
+              virtue: 'Exemplifies corporate stewardship, moral courage, and authentic environmental ethics.',
+              justice: 'Protects vulnerable local residents who lack corporate representation in board decisions.'
+            }
+          },
+          {
+            id: 's2_a2',
+            text: 'Delay shutdown until scheduled annual maintenance in 8 months while monitoring levels.',
+            tag: 'Legalistic Risk Management',
+            framework: 'utilitarian',
+            deltaIntegrity: -10,
+            deltaStakeholder: -10,
+            deltaRisk: +25,
+            outcomeText: 'Heavy rain 4 months later accelerates seepage to 65 ppm. A local investigative journalist breaks the story, resulting in $45M in fines and severe brand damage.',
+            precedent: 'Mirroring PG&E groundwater contamination cases and BP Deepwater Horizon maintenance deferrals.',
+            evals: {
+              utilitarian: 'Fails in its expected utility calculation by gambling on weather and biological dispersion factors.',
+              deontology: 'Treats legal minimums as moral maximums, violating basic duties of safety.',
+              virtue: 'Demonstrates complacency and short-sighted financial greed over public health.',
+              justice: 'Unfairly burdens community residents with toxic exposure risk for corporate convenience.'
+            }
+          }
+        ]
+      },
+      {
+        id: 'scenario3',
+        title: 'The Whistleblower\'s Ledger',
+        sub: 'Topic: Fraud, Tone at the Top & Audit Escalation',
+        urgency: 'Anonymous Hotline Disclosure',
+        narrative: `
+          An anonymous whistleblower provides indisputable evidence that the Charismatic CEO—who single-handedly saved the firm from insolvency three years ago—has been misallocating <strong>$8.5 Million in software licensing fees</strong> to off-balance-sheet Special Purpose Entities (SPEs).
+          <br><br>
+          The CEO privately approaches you: <em>"If this leak becomes public, our credit rating collapses tomorrow and we lay off 1,200 workers. Give me 6 months to quietly roll back the accounts."</em>
+        `,
+        metrics: [
+          { label: 'Off-Balance Liability', val: '$8.5M', color: 'text-red-400' },
+          { label: 'Job Losses at Risk', val: '1,200 Workers', color: 'text-amber-400' },
+          { label: 'Credit Rating Threat', val: 'Junk Status', color: 'text-purple-400' }
+        ],
+        stakeholders: [
+          { title: '1,200 Rank-and-File Employees', desc: 'At risk of losing livelihoods if credit is frozen.' },
+          { title: 'Audit Committee & Lenders', desc: 'Entitled to truthful financial statements under law.' }
+        ],
+        options: [
+          {
+            id: 's3_a1',
+            text: 'Immediately report the SPE misallocation to the Audit Committee and External Auditors.',
+            tag: 'Uncompromising Governance',
+            framework: 'deontology',
+            deltaIntegrity: +15,
+            deltaStakeholder: -5,
+            deltaRisk: -30,
+            outcomeText: 'The CEO is ousted by the board. Financial statements are restated. While debt refinancing costs increase, the company avoids criminal corporate forfeiture under Sarbanes-Oxley.',
+            precedent: 'Directly parallels the whistleblowing events at WorldCom (Cynthia Cooper) and Enron (Sherron Watkins).',
+            evals: {
+              utilitarian: 'Causes immediate organizational pain, but prevents total catastrophic corporate liquidation later.',
+              deontology: 'Strictly fulfills statutory and ethical duties under IESBA professional codes.',
+              virtue: 'Displays steadfast moral fortitude against executive intimidation.',
+              justice: 'Ensures equal application of governance laws regardless of executive rank or charisma.'
+            }
+          },
+          {
+            id: 's3_a2',
+            text: 'Grant the CEO\'s 6-month extension under secret internal oversight.',
+            tag: 'Consequentialist Compromise',
+            framework: 'utilitarian',
+            deltaIntegrity: -25,
+            deltaStakeholder: -15,
+            deltaRisk: +40,
+            outcomeText: 'Two months in, external auditors detect the hidden ledger independently. You are named as a co-conspirator in a federal securities fraud indictment.',
+            precedent: 'Reflects the criminal conviction of executives who assisted in cover-ups at Olympus and HealthSouth.',
+            evals: {
+              utilitarian: 'Failed utility attempt; cover-ups exponentially compound initial illegal acts.',
+              deontology: 'Direct violation of duty to report material fraud to board and regulators.',
+              virtue: 'Compromises professional independence through misplaced personal loyalty.',
+              justice: 'Deprives lenders and markets of accurate financial risk assessment.'
+            }
+          }
+        ]
+      },
+      {
+        id: 'scenario4',
+        title: 'AI Automation vs. Human Capital',
+        sub: 'Topic: Workforce Ethics & Technology Transition',
+        urgency: 'Board Restructuring Approval',
+        narrative: `
+          Your transformation team has developed an Enterprise AI Financial Accounting platform capable of performing 85% of routine bookkeeping, audit sampling, and tax compliance tasks. 
+          <br><br>
+          Implementing the software will boost annual operating margin by <strong>22%</strong> and save $18M annually, but requires immediate termination of <strong>350 junior accounting staff</strong> with standard 2-week severance packages.
+        `,
+        metrics: [
+          { label: 'Annual Cost Savings', val: '$18.0M', color: 'text-emerald-400' },
+          { label: 'Impacted Personnel', val: '350 Staff', color: 'text-red-400' },
+          { label: 'Operating Margin Delta', val: '+22%', color: 'text-sky-400' }
+        ],
+        stakeholders: [
+          { title: 'Junior Staff & Local Economy', desc: 'Facing sudden displacement in a tight job market.' },
+          { title: 'Shareholders & Tech Leadership', desc: 'Expecting rapid AI adoption and efficiency gains.' }
+        ],
+        options: [
+          {
+            id: 's4_a1',
+            text: 'Adopt AI over a phased 2-year plan with mandatory re-skilling & elevated severance.',
+            tag: 'Just Transition Model',
+            framework: 'justice',
+            deltaIntegrity: +10,
+            deltaStakeholder: +15,
+            deltaRisk: -10,
+            outcomeText: 'Profit gains are delayed by 12 months, but 60% of junior staff successfully transition into higher-value financial analysis roles, boosting long-term corporate productivity.',
+            precedent: 'Emulates progressive corporate human-capital transitions seen in forward-thinking European enterprise firms.',
+            evals: {
+              utilitarian: 'Maximizes aggregate human wellbeing by balancing profitability with workforce security.',
+              deontology: 'Treats employees as ends in themselves, not merely disposable economic tools.',
+              virtue: 'Shows compassion, wisdom, and humane stewardship during technological disruption.',
+              justice: 'Ensures equitable distribution of the benefits gained from technological automation.'
+            }
+          },
+          {
+            id: 's4_a2',
+            text: 'Execute immediate termination of 350 staff to capture full immediate fiscal quarter savings.',
+            tag: 'Aggressive Capital Efficiency',
+            framework: 'utilitarian',
+            deltaIntegrity: -10,
+            deltaStakeholder: -20,
+            deltaRisk: +15,
+            outcomeText: 'Share price spikes 9% on news of margin expansion. However, internal morale collapses, institutional knowledge is lost, and talent recruitment drops severely.',
+            precedent: 'Reflects brutal corporate downsizing strategies that impair long-term corporate culture and innovation.',
+            evals: {
+              utilitarian: 'Prioritizes immediate capital return over human capital stability.',
+              deontology: 'Reduces human workers to mere cost centers to be optimized away instantly.',
+              virtue: 'Lacks empathy and organizational loyalty toward dedicated junior employees.',
+              justice: 'Concentrates AI financial gains strictly among shareholders while shifting dislocation costs to workers.'
+            }
+          }
+        ]
+      },
+      {
+        id: 'scenario5',
+        title: 'The Off-Shore Labor Paradox',
+        sub: 'Topic: Global Supply Chain Ethics & Human Rights',
+        urgency: 'Third-Party Audit Discrepancy',
+        narrative: `
+          An independent audit reveals that your overseas sub-contractor in a developing region employs 14-year-old apprentices in component assembly. 
+          <br><br>
+          While legal under local national laws, it breaches your corporate code of conduct. Terminating the contract immediately will cause the supplier plant to close, leaving 200 families without income in an impoverished region.
+        `,
+        metrics: [
+          { label: 'Impacted Families', val: '200 Households', color: 'text-amber-400' },
+          { label: 'Local Law Compliance', val: 'Legal Nationally', color: 'text-emerald-400' },
+          { label: 'Brand Reputational Risk', val: 'Extreme', color: 'text-red-400' }
+        ],
+        stakeholders: [
+          { title: 'Child Workers & Local Families', desc: 'Rely on wages for basic nourishment and shelter.' },
+          { title: 'Global Consumers & Brand Value', desc: 'Demand ethical supply chains free of child exploitation.' }
+        ],
+        options: [
+          {
+            id: 's5_a1',
+            text: 'Fund local schooling stipends for apprentices while maintaining adult employment at factory.',
+            tag: 'Developmental Ethics',
+            framework: 'virtue',
+            deltaIntegrity: +15,
+            deltaStakeholder: +20,
+            deltaRisk: -15,
+            outcomeText: 'Your company subsidizes formal education for youth while guaranteeing parental wage increases. The initiative becomes an internationally acclaimed ESG case study.',
+            precedent: 'Mirrors Nike and IKEA’s reform of overseas supply chain child labor interventions in the late 1990s.',
+            evals: {
+              utilitarian: 'Creates genuine long-term socioeconomic uplift without causing immediate starvation.',
+              deontology: 'Upholds human dignity and universal rights while adjusting for local context.',
+              virtue: 'Demonstrates authentic moral leadership and global corporate citizenship.',
+              justice: 'Protects vulnerable children while empowering local economic development.'
+            }
+          },
+          {
+            id: 's5_a2',
+            text: 'Cancel the supplier contract instantly to protect corporate brand reputation.',
+            tag: 'Rigid Compliance Isolation',
+            framework: 'deontology',
+            deltaIntegrity: -5,
+            deltaStakeholder: -25,
+            deltaRisk: +10,
+            outcomeText: 'Your brand remains clean in Western media, but the factory shuts down, driving displaced families into dangerous unregulated informal labor markets.',
+            precedent: 'Illustrates the unintended catastrophic consequences of superficial corporate virtue signaling.',
+            evals: {
+              utilitarian: 'Negative net utility; harms the very individuals the policy aimed to protect.',
+              deontology: 'Follows rule letter blindly while ignoring real-world moral consequences.',
+              virtue: 'Prioritizes corporate self-preservation over genuine human care.',
+              justice: 'Fails to consider the structural economic vulnerability of local workers.'
+            }
+          }
+        ]
+      }
+    ];
+
+
+    /* ========================================================================
+       GAME LOGIC & RENDER ENGINE
+       ======================================================================== */
+    
+    function selectRole(roleKey) {
+      gameState.role = roleKey;
+      playSound('select');
+      
+      document.getElementById('screenOnboarding').classList.add('hidden');
+      document.getElementById('screenDilemma').classList.remove('hidden');
+      document.getElementById('statsBar').classList.remove('hidden');
+      
+      renderScenario(0);
+    }
+
+    function renderScenario(idx) {
+      gameState.currentScenarioIdx = idx;
+      const data = SCENARIOS[idx];
+
+      // Update Header Badges
+      document.getElementById('caseNumberBadge').innerText = `CASE 0${idx + 1} / 0${SCENARIOS.length}`;
+      document.getElementById('scenarioTitle').innerText = data.title;
+      document.getElementById('scenarioSub').innerText = data.sub;
+
+      // Render Progress Dots
+      const dotsContainer = document.getElementById('scenarioDots');
+      dotsContainer.innerHTML = '';
+      SCENARIOS.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.className = `w-3 h-3 rounded-full transition-all ${
+          i === idx ? 'bg-brand-500 scale-125 ring-4 ring-brand-500/20' : 
+          i < idx ? 'bg-emerald-500' : 'bg-slate-800'
+        }`;
+        dotsContainer.appendChild(dot);
+      });
+
+      // Render Content
+      document.getElementById('urgencyBadge').innerText = data.urgency;
+      document.getElementById('scenarioText').innerHTML = data.narrative;
+
+      // Render Scenario Metrics
+      const metricsContainer = document.getElementById('scenarioMetrics');
+      metricsContainer.innerHTML = data.metrics.map(m => `
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-[10px] text-slate-400 font-mono block">${m.label}</span>
+          <span class="text-xs font-bold font-mono ${m.color}">${m.val}</span>
+        </div>
+      `).join('');
+
+      // Render Stakeholders
+      const stakeholdersContainer = document.getElementById('stakeholderGrid');
+      stakeholdersContainer.innerHTML = data.stakeholders.map(s => `
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+          <span class="font-bold text-xs text-slate-200 block mb-0.5">${s.title}</span>
+          <span class="text-[11px] text-slate-400 leading-snug block">${s.desc}</span>
+        </div>
+      `).join('');
+
+      // Render Options
+      const optionsContainer = document.getElementById('optionsContainer');
+      optionsContainer.innerHTML = data.options.map((opt, oIdx) => `
+        <button onclick="chooseOption(${oIdx})" class="w-full text-left p-4 rounded-xl glass-card glass-card-interactive border border-slate-800 hover:border-brand-500/50 group transition-all">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-500/10 text-brand-400 font-semibold border border-brand-500/20">
+              ${opt.tag}
+            </span>
+            <i class="fa-solid fa-arrow-right text-xs text-slate-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all"></i>
+          </div>
+          <p class="text-xs font-semibold text-slate-200 group-hover:text-white">${opt.text}</p>
+        </button>
+      `).join('');
+
+      updateTopStatsUI();
+    }
+
+    function chooseOption(optIdx) {
+      playSound('complete');
+      const scenario = SCENARIOS[gameState.currentScenarioIdx];
+      const opt = scenario.options[optIdx];
+
+      // Update State Scores
+      gameState.integrityScore = Math.max(0, Math.min(100, gameState.integrityScore + opt.deltaIntegrity));
+      gameState.stakeholderScore = Math.max(0, Math.min(100, gameState.stakeholderScore + opt.deltaStakeholder));
+      gameState.governanceRisk = Math.max(0, Math.min(100, gameState.governanceRisk + opt.deltaRisk));
+
+      // Track Moral Framework
+      if (gameState.frameworkScores[opt.framework] !== undefined) {
+        gameState.frameworkScores[opt.framework] += 1;
+      }
+
+      // Log History
+      gameState.history.push({
+        scenarioTitle: scenario.title,
+        choiceTag: opt.tag,
+        choiceText: opt.text,
+        framework: opt.framework
+      });
+
+      // Show Debrief Screen
+      showDebrief(scenario, opt);
+    }
+
+    function showDebrief(scenario, opt) {
+      document.getElementById('screenDilemma').classList.add('hidden');
+      document.getElementById('screenDebrief').classList.remove('hidden');
+
+      // Debrief Header
+      document.getElementById('debriefChoiceTitle').innerText = opt.tag;
+      document.getElementById('debriefOutcomeBody').innerHTML = `
+        <p class="text-base text-slate-200 font-medium">${opt.outcomeText}</p>
+      `;
+      document.getElementById('debriefPrecedent').innerText = opt.precedent;
+
+      // Render 4 Philosophical Frameworks Grid
+      const grid = document.getElementById('frameworksAnalysisGrid');
+      grid.innerHTML = `
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-sky-900/40">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-xs text-sky-400 font-mono">1. Utilitarian Lens (Consequences)</span>
+            <span class="text-[10px] font-mono text-slate-500">Net Welfare</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">${opt.evals.utilitarian}</p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-purple-900/40">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-xs text-purple-400 font-mono">2. Deontological Lens (Kantian Duty)</span>
+            <span class="text-[10px] font-mono text-slate-500">Categorical Duty</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">${opt.evals.deontology}</p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-emerald-900/40">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-xs text-emerald-400 font-mono">3. Virtue Ethics Lens (Character)</span>
+            <span class="text-[10px] font-mono text-slate-500">Integrity & Excellence</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">${opt.evals.virtue}</p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-amber-900/40">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-xs text-amber-400 font-mono">4. Justice & Fairness Lens (Rawls)</span>
+            <span class="text-[10px] font-mono text-slate-500">Equity & Distribution</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">${opt.evals.justice}</p>
+        </div>
+      `;
+
+      updateTopStatsUI();
+    }
+
+    function nextScenario() {
+      playSound('click');
+      document.getElementById('screenDebrief').classList.add('hidden');
+
+      if (gameState.currentScenarioIdx + 1 < SCENARIOS.length) {
+        document.getElementById('screenDilemma').classList.remove('hidden');
+        renderScenario(gameState.currentScenarioIdx + 1);
+      } else {
+        showFinalResults();
+      }
+    }
+
+
+    /* ========================================================================
+       FINAL SCORECARD & RADAR CHART ENGINE
+       ======================================================================== */
+    
+    function showFinalResults() {
+      playSound('complete');
+      document.getElementById('screenDebrief').classList.add('hidden');
+      document.getElementById('screenResults').classList.remove('hidden');
+
+      // Calculate Archetype
+      let dominant = 'utilitarian';
+      let maxScore = -1;
+      Object.keys(gameState.frameworkScores).forEach(f => {
+        if (gameState.frameworkScores[f] > maxScore) {
+          maxScore = gameState.frameworkScores[f];
+          dominant = f;
+        }
+      });
+
+      const archetypes = {
+        deontology: {
+          title: 'Kantian Duty Guard',
+          icon: 'fa-shield-halved',
+          desc: 'You prioritize moral duties, professional standards, and absolute integrity regardless of short-term economic friction.',
+          rec: 'Ensure you weigh the practical human consequences during crises so that rigid rule enforcement doesn\'t cause unintended harm.'
+        },
+        utilitarian: {
+          title: 'Utilitarian Strategist',
+          icon: 'fa-chart-pie',
+          desc: 'You focus on pragmatic outcomes, financial stabilization, and net welfare optimization across corporate stakeholders.',
+          rec: 'Be careful not to cross ethical red lines or compromise reporting standards in pursuit of greater net utility.'
+        },
+        virtue: {
+          title: 'Virtue Ethics Leader',
+          icon: 'fa-gem',
+          desc: 'You lead through practical wisdom, character stewardship, and authentic moral leadership in executive decision-making.',
+          rec: 'Maintain strong alignment with formal statutory compliance structures to reinforce your personal virtue framework.'
+        },
+        justice: {
+          title: 'Rawlsian Fairness Champion',
+          icon: 'fa-scale-balanced',
+          desc: 'You protect vulnerable stakeholders, human rights, and equitable distribution of governance benefits.',
+          rec: 'Balance social fairness imperatives with essential corporate capital requirements to ensure long-term solvency.'
+        }
+      };
+
+      const arch = archetypes[dominant] || archetypes.deontology;
+      document.getElementById('finalPersonaTitle').innerText = arch.title;
+      document.getElementById('finalPersonaDesc').innerText = arch.desc;
+      document.getElementById('finalRecommendationText').innerText = arch.rec;
+      document.getElementById('finalPersonaIcon').innerHTML = `<i class="fa-solid ${arch.icon}"></i>`;
+
+      // Render Final Scores
+      document.getElementById('finalScoreIntegrity').innerText = `${gameState.integrityScore}%`;
+      document.getElementById('finalScoreStakeholder').innerText = `${gameState.stakeholderScore}%`;
+      document.getElementById('finalScoreRisk').innerText = gameState.governanceRisk < 30 ? 'Low' : gameState.governanceRisk < 60 ? 'Moderate' : 'High';
+
+      // History Log
+      const historyContainer = document.getElementById('historyLogContainer');
+      historyContainer.innerHTML = gameState.history.map((h, i) => `
+        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs">
+          <div>
+            <span class="font-bold text-slate-200 block">Case 0${i+1}: ${h.scenarioTitle}</span>
+            <span class="text-[11px] text-slate-400">${h.choiceTag}</span>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-brand-400 uppercase font-bold">
+            ${h.framework}
+          </span>
+        </div>
+      `).join('');
+
+      // Draw Radar Chart on HTML5 Canvas
+      drawRadarChart();
+    }
+
+    function drawRadarChart() {
+      const canvas = document.getElementById('radarChartCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const cX = w / 2;
+      const cY = h / 2;
+      const radius = 70;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Radar Axes
+      const labels = ['Utilitarian', 'Deontology', 'Virtue', 'Justice'];
+      const values = [
+        gameState.frameworkScores.utilitarian,
+        gameState.frameworkScores.deontology,
+        gameState.frameworkScores.virtue,
+        gameState.frameworkScores.justice
+      ];
+      const maxVal = Math.max(...values, 3);
+
+      // Draw Background Concentric Web
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      for (let r = 1; r <= 3; r++) {
+        ctx.beginPath();
+        const curR = (radius / 3) * r;
+        for (let i = 0; i < 4; i++) {
+          const angle = (Math.PI / 2) * i - Math.PI / 2;
+          const x = cX + curR * Math.cos(angle);
+          const y = cY + curR * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // Draw Spoke Lines & Labels
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let i = 0; i < 4; i++) {
+        const angle = (Math.PI / 2) * i - Math.PI / 2;
+        const x = cX + radius * Math.cos(angle);
+        const y = cY + radius * Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(cX, cY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        // Label Position
+        const lx = cX + (radius + 22) * Math.cos(angle);
+        const ly = cY + (radius + 14) * Math.sin(angle);
+        ctx.fillText(labels[i], lx, ly);
+      }
+
+      // Draw Player Score Polygon
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const angle = (Math.PI / 2) * i - Math.PI / 2;
+        const normVal = Math.min(1, values[i] / maxVal);
+        const r = normVal * radius;
+        const x = cX + r * Math.cos(angle);
+        const y = cY + r * Math.sin(angle);
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+
+      ctx.fillStyle = 'rgba(234, 88, 12, 0.35)';
+      ctx.fill();
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function updateTopStatsUI() {
+      document.getElementById('statIntegrity').innerText = `${gameState.integrityScore}%`;
+      document.getElementById('statStakeholder').innerText = `${gameState.stakeholderScore}%`;
+      
+      const riskEl = document.getElementById('statRisk');
+      if (gameState.governanceRisk < 30) {
+        riskEl.innerText = 'Low';
+        riskEl.className = 'font-bold text-emerald-400';
+      } else if (gameState.governanceRisk < 60) {
+        riskEl.innerText = 'Moderate';
+        riskEl.className = 'font-bold text-amber-400';
+      } else {
+        riskEl.innerText = 'High';
+        riskEl.className = 'font-bold text-red-400';
+      }
+    }
+
+    /* ========================================================================
+       MODAL CONTROLS & RESTART LOGIC
+       ======================================================================== */
+    function openReferenceModal() {
+      playSound('click');
+      document.getElementById('referenceModal').classList.remove('hidden');
+    }
+
+    function closeReferenceModal() {
+      playSound('click');
+      document.getElementById('referenceModal').classList.add('hidden');
+    }
+
+    function confirmRestart() {
+      if (confirm('Restart simulation and clear progress?')) {
+        restartGame();
+      }
+    }
+
+    function restartGame() {
+      gameState.currentScenarioIdx = 0;
+      gameState.integrityScore = 100;
+      gameState.stakeholderScore = 75;
+      gameState.governanceRisk = 20;
+      gameState.frameworkScores = { utilitarian: 0, deontology: 0, virtue: 0, justice: 0 };
+      gameState.history = [];
+
+      document.getElementById('screenDebrief').classList.add('hidden');
+      document.getElementById('screenResults').classList.add('hidden');
+      document.getElementById('screenDilemma').classList.add('hidden');
+      document.getElementById('statsBar').classList.add('hidden');
+      document.getElementById('screenOnboarding').classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>
